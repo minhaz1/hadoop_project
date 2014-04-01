@@ -72,7 +72,7 @@ public class Reverse_Geocode {
 	
 	//Testing the code
 	public static void main (String[] args){
-		Reverse_Geocode rv_code = new Reverse_Geocode("C:\\Users\\Beautiful\\Desktop\\states.shp");
+		Reverse_Geocode rv_code = new Reverse_Geocode("us_states\\states.shp");
 		System.out.println(rv_code.getStateCode(-98.74, 32.58));
 	
 	}
