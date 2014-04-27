@@ -1,0 +1,6 @@
+alias compile='javac -cp \* Twitter_Public_Stream.java';
+alias run='java -cp .:\* Twitter_Public_Stream twitter_dump.properties';
+alias clean='rm *~ -f';
+alias puthdfs='hdfs dfs -put tweets_tsv/* /flume/events/tweets';
+alias runhive='hive -f ~/hadoop_project/hive/hive.hql && hive -f ~/hadoop_project/hive/h2.hql';
+alias getresults='hdfs dfs -get /hive-out/*';

@@ -14,12 +14,11 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
 import twitter4j.FilterQuery;
-import twitter4j.GeoLocation;
+import twitter4j.HashtagEntity;
 import twitter4j.StallWarning;
 import twitter4j.Status;
 import twitter4j.StatusDeletionNotice;
 import twitter4j.StatusListener;
-import twitter4j.TwitterObjectFactory;
 import twitter4j.TwitterStream;
 import twitter4j.TwitterStreamFactory;
 
@@ -47,28 +46,35 @@ public class Twitter_Public_Stream implements StatusListener{
 	//Max file size before rolling out to a new files
 	private long MAX_BYTE_SIZE = 2048;
 	
+	//location
+	private double LAT;
+	private double LNG;
+	
 	//Location lookup
-	private Reverse_Geocode rev_geocode;
 	
 	
 	private BufferedWriter buff_write;
+	
+	private String TAG;
 	
 	/**
 	 * Constructor to takes in the file_path for the configuration file
 	 * if no configuration file is given, use the default value
 	 * @param file_path
 	 */
-	public Twitter_Public_Stream(String file_path,String tag){
+	public Twitter_Public_Stream(String file_path,String tag, double lat, double lng){
 		
-		//Initialize the reverse lookup map
-		rev_geocode = new Reverse_Geocode("us_states\\states.shp");
+		this.LAT = lat;
+		this.LNG = lng;
 		
+		TAG = tag;
+		//Initialize the reverse lookup map		
 		if (file_path != null){
 			this.config_file_path = file_path;
 			set_configuration(tag);
 		}
 		
-		json_out = new File(this.file_path+"\\"+file_name+"_"+System.currentTimeMillis()+".txt");
+		json_out = new File(this.file_path+file_name+"_"+System.currentTimeMillis()+".txt");
 		try {
 			buff_write = new BufferedWriter(new FileWriter(json_out));
 		} catch (IOException e) {
@@ -107,7 +113,7 @@ public class Twitter_Public_Stream implements StatusListener{
 			buff_write.flush();
 			buff_write.close();
 			//Timestamp the file
-			json_out = new File(file_path+"\\"+file_name+"_"+System.currentTimeMillis()+".txt");
+			json_out = new File(file_path+file_name+"_"+System.currentTimeMillis()+".txt");
 			
 			CURR_EVENTS = 0;
 			CURR_BYTE_SIZE = 0;
@@ -165,32 +171,48 @@ public class Twitter_Public_Stream implements StatusListener{
 		 */
 		
 		//Getting the location 
-		GeoLocation location = status.getGeoLocation();
+		HashtagEntity[] hash_entities = status.getHashtagEntities();
+
+		if (hash_entities.length == 0)
+		    return;
+
+		String text = status.getText().replaceAll("\n","");
+		String date = status.getCreatedAt().toString();
+		
+		String hash = "";
+		for (HashtagEntity h : hash_entities){
+			hash+=h.getText() + " ";
+		}
+		
+		String out=TAG + "\t" + LAT +" " + LNG + "\t" + date + "\t" + text + "\t";
+		
+		System.out.println(out);
 
 		//For now we are storing the raw json file
 		try {
-			String raw_json = TwitterObjectFactory.getRawJSON(status);
+			//String raw_json = TwitterObjectFactory.getRawJSON(status);
 			
 			if (MAX_EVENTS == 0){
 				if (MAX_BYTE_SIZE !=0){
-					if (CURR_BYTE_SIZE + raw_json.length() >= MAX_BYTE_SIZE){
+					if (CURR_BYTE_SIZE + out.length() >= MAX_BYTE_SIZE){
 						flush_file();
 					}
 				}
 			}
-			buff_write.write(raw_json);
+			//buff_write.write(raw_json);
 			/* Testing location filtering and match it with reverse lookup
 			buff_write.newLine();
 			String state_location = rev_geocode.getStateCode(status.getGeoLocation().getLongitude(),status.getGeoLocation().getLatitude());
 			buff_write.write(state_location);
 			*/
+			buff_write.write(out);
 			buff_write.newLine();
 			
 			if (MAX_EVENTS != 0){
 				CURR_EVENTS ++;
 			}else{
 				if (MAX_BYTE_SIZE != 0)
-					CURR_BYTE_SIZE+=raw_json.length();
+					CURR_BYTE_SIZE+=out.length();
 			}
 
 		} catch (IOException e) {
@@ -259,6 +281,8 @@ public class Twitter_Public_Stream implements StatusListener{
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 
+		System.out.println("HEY ITS RUNNING");
+		System.out.println(args.toString());
 		/*
 		//Setting the filter to only get tweets from New-York	
 		double[][] location_filter ={{-74.0,40.0},{-73.0,41.0}, //New York
@@ -292,7 +316,7 @@ public class Twitter_Public_Stream implements StatusListener{
 		String name = null;
 		if (args.length == 6)
 			name = args[5];
-		Twitter_Public_Stream listener = new Twitter_Public_Stream(config,name);
+		Twitter_Public_Stream listener = new Twitter_Public_Stream(config,name,(lat1+lat2)/2,(lon1+lon2)/2);
 
 		twitterStream.addListener(listener);
 		twitterStream.filter(fq);

@@ -291,4 +291,3 @@ function MarkerWithLabel(opt_options) {
 }
 
 // MarkerWithLabel inherits from <code>Marker</code>:
-MarkerWithLabel.prototype = new google.maps.Marker();
